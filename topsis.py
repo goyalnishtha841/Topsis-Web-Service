@@ -113,3 +113,6 @@ def run_topsis(input_file, weights, impacts, output_file):
     result_df.to_csv(output_file, index=False)
 
     return output_file
+
+import gc
+gc.collect()
