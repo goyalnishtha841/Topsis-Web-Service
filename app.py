@@ -63,8 +63,9 @@ def process():
 
 def send_email(receiver, attachment):
 
-    sender = "ngoyal4_be23@thapar.edu"
-    password = "tahjtcscbvjfxqvd"   # Gmail app password
+    sender = "yourgmail@gmail.com"
+    password = "yourpassword"
+  # Gmail app password
 
     msg = EmailMessage()
     msg["Subject"] = "TOPSIS Result"
