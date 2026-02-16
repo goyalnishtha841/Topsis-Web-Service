@@ -95,7 +95,7 @@ def run_topsis(input_file, weights, impacts, output_file):
     # read file (CSV or Excel)
     try:
         if input_file.endswith('.csv'):
-            df = pd.read_csv(input_file,low_memory=True))
+            df = pd.read_csv(input_file)
         elif input_file.endswith('.xlsx'):
             df = pd.read_excel(input_file)
         else:
