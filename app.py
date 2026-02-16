@@ -4,6 +4,7 @@ import re
 from topsis import run_topsis
 import smtplib
 from email.message import EmailMessage
+from flask import send_file
 import threading   
 
 app = Flask(__name__)
@@ -65,7 +66,8 @@ def process():
             args=(email, output_path)
         ).start()
 
-        return "Result generated and email is being sent!"
+        return send_file(output_path, as_attachment=True)
+
 
     except Exception as e:
         print("PROCESS ERROR:", e)
