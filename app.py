@@ -63,8 +63,9 @@ def process():
 
 def send_email(receiver, attachment):
 
-    sender = "yourgmail@gmail.com"
-    password = "yourpassword"
+    sender = os.environ.get("EMAIL_USER")
+    password = os.environ.get("EMAIL_PASS")
+
   # Gmail app password
 
     msg = EmailMessage()
