@@ -4,6 +4,7 @@ import re
 from topsis import run_topsis
 import smtplib
 from email.message import EmailMessage
+import threading   # ✅ FIX (run email async)
 
 app = Flask(__name__)
 print("App starting...")
@@ -28,64 +29,85 @@ def valid_email(email):
 @app.route('/process', methods=['POST'])
 def process():
 
-    file = request.files['file']
-    weights = request.form['weights']
-    impacts = request.form['impacts']
-    email = request.form['email']
+    try:   # ✅ FIX (prevent server crash)
 
-    # validations
-    if not valid_email(email):
-        return "Invalid email format"
+        file = request.files['file']
+        weights = request.form['weights']
+        impacts = request.form['impacts']
+        email = request.form['email']
 
-    weights_list = weights.split(',')
-    impacts_list = impacts.split(',')
+        # validations
+        if not valid_email(email):
+            return "Invalid email format"
 
-    if len(weights_list) != len(impacts_list):
-        return "Weights and impacts must be same length"
+        weights_list = weights.split(',')
+        impacts_list = impacts.split(',')
 
-    for i in impacts_list:
-        if i not in ['+', '-']:
-            return "Impacts must be + or -"
+        if len(weights_list) != len(impacts_list):
+            return "Weights and impacts must be same length"
 
-    # save uploaded file
-    input_path = os.path.join(UPLOAD_FOLDER, file.filename)
-    file.save(input_path)
+        for i in impacts_list:
+            if i not in ['+', '-']:
+                return "Impacts must be + or -"
 
-    output_path = os.path.join(RESULT_FOLDER, "result.csv")
+        # save uploaded file
+        input_path = os.path.join(UPLOAD_FOLDER, file.filename)
+        file.save(input_path)
 
-    # run topsis
-    run_topsis(input_path, weights, impacts, output_path)
+        output_path = os.path.join(RESULT_FOLDER, "result.csv")
 
-    send_email(email, output_path)
+        # run topsis
+        run_topsis(input_path, weights, impacts, output_path)
 
-    return "Result sent to your email!"
+        # ✅ FIX — send email in background thread
+        threading.Thread(
+            target=send_email,
+            args=(email, output_path)
+        ).start()
 
+        return "Result generated and email is being sent!"
+
+    except Exception as e:
+        print("PROCESS ERROR:", e)
+        return f"Error occurred: {str(e)}"
+
+
+# ---------------- EMAIL FUNCTION ---------------- #
 
 def send_email(receiver, attachment):
 
-    sender = os.environ.get("EMAIL_USER")
-    password = os.environ.get("EMAIL_PASS")
+    try:   # ✅ FIX (never crash server)
 
-  # Gmail app password
+        sender = os.environ.get("EMAIL_USER")
+        password = os.environ.get("EMAIL_PASS")
 
-    msg = EmailMessage()
-    msg["Subject"] = "TOPSIS Result"
-    msg["From"] = sender
-    msg["To"] = receiver
+        if not sender or not password:
+            print("Email credentials missing")
+            return
 
-    msg.set_content("Attached is your TOPSIS result.")
+        msg = EmailMessage()
+        msg["Subject"] = "TOPSIS Result"
+        msg["From"] = sender
+        msg["To"] = receiver
+        msg.set_content("Attached is your TOPSIS result.")
 
-    with open(attachment, "rb") as f:
-        msg.add_attachment(
-            f.read(),
-            maintype="application",
-            subtype="octet-stream",
-            filename="result.csv"
-        )
+        with open(attachment, "rb") as f:
+            msg.add_attachment(
+                f.read(),
+                maintype="application",
+                subtype="octet-stream",
+                filename="result.csv"
+            )
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(sender, password)
-        smtp.send_message(msg)
+        # ✅ FIX — timeout added
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as smtp:
+            smtp.login(sender, password)
+            smtp.send_message(msg)
+
+        print("Email sent successfully")
+
+    except Exception as e:
+        print("EMAIL ERROR:", e)
 
 
 if __name__ == "__main__":
