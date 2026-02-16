@@ -4,7 +4,7 @@ import re
 from topsis import run_topsis
 import smtplib
 from email.message import EmailMessage
-import threading   # ✅ FIX (run email async)
+import threading   
 
 app = Flask(__name__)
 print("App starting...")
@@ -29,7 +29,7 @@ def valid_email(email):
 @app.route('/process', methods=['POST'])
 def process():
 
-    try:   # ✅ FIX (prevent server crash)
+    try:   
 
         file = request.files['file']
         weights = request.form['weights']
@@ -50,7 +50,7 @@ def process():
             if i not in ['+', '-']:
                 return "Impacts must be + or -"
 
-        # save uploaded file
+    
         input_path = os.path.join(UPLOAD_FOLDER, file.filename)
         file.save(input_path)
 
@@ -59,7 +59,7 @@ def process():
         # run topsis
         run_topsis(input_path, weights, impacts, output_path)
 
-        # ✅ FIX — send email in background thread
+       
         threading.Thread(
             target=send_email,
             args=(email, output_path)
@@ -72,11 +72,11 @@ def process():
         return f"Error occurred: {str(e)}"
 
 
-# ---------------- EMAIL FUNCTION ---------------- #
+
 
 def send_email(receiver, attachment):
 
-    try:   # ✅ FIX (never crash server)
+    try:  
 
         sender = os.environ.get("EMAIL_USER")
         password = os.environ.get("EMAIL_PASS")
@@ -99,7 +99,7 @@ def send_email(receiver, attachment):
                 filename="result.csv"
             )
 
-        # ✅ FIX — timeout added
+     
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as smtp:
             smtp.login(sender, password)
             smtp.send_message(msg)
