@@ -118,8 +118,6 @@ pip install Topsis-Nishtha-102317136
 
 After installation, run:
 
-topsis <InputFile> <Weights> <Impacts> <OutputFile>
-
 ### Example
 topsis data.csv "1,1,1,2" "+,+,-,+" result.csv
 
